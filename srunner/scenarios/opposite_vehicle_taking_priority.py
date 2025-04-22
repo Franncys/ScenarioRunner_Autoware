@@ -50,9 +50,19 @@ class OppositeVehicleJunction(BasicScenario):
         """
         self._world = world
         self._map = CarlaDataProvider.get_map()
-        self._source_dist = 30
+        self._source_dist = 20
         self._sink_dist = 10
-        self._adversary_speed = 60 / 3.6 # m/s
+        
+        # I also want the adversary speed and min_trigger_dist to be configurable
+        if 'adversary_speed' in config.other_parameters:
+            self._adversary_speed = float(config.other_parameters['adversary_speed']['value']) / 3.6
+        else:
+            self._adversary_speed = 40 / 3.6 # m/s
+
+        if 'trigger_distance' in config.other_parameters:
+            self._min_trigger_dist = float(config.other_parameters['trigger_distance']['value'])
+        else:
+            self._min_trigger_dist = 10.0
 
         if 'direction' in config.other_parameters:
             self._direction = config.other_parameters['direction']['value']
@@ -62,8 +72,8 @@ class OppositeVehicleJunction(BasicScenario):
 
         self.timeout = timeout
 
-        self._sync_time = 2.2  # Time the agent has to react to avoid the collision [s]
-        self._min_trigger_dist = 12.0  # Min distance to the collision location that triggers the adversary [m]
+        self._sync_time = 3.2  # Time the agent has to react to avoid the collision [s]
+        #self._min_trigger_dist = 10.0  # Min distance to the collision location that triggers the adversary [m]
 
         self._lights = carla.VehicleLightState.Special1 | carla.VehicleLightState.Special2
 
@@ -102,7 +112,7 @@ class OppositeVehicleJunction(BasicScenario):
         spawn_wp = source_entry_wps[0]
         source_junction_dist = 0
         while source_junction_dist < self._source_dist:
-            spawn_wps = spawn_wp.previous(1.0)
+            spawn_wps = spawn_wp.next(1.0)
             if len(spawn_wps) == 0:
                 raise ValueError("Failed to find a source location as a waypoint with no previous was detected")
             if spawn_wps[0].is_junction:

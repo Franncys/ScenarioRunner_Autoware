@@ -40,16 +40,7 @@ class StaticCutIn(BasicScenario):
     to cut in in front of the ego vehicle, forcing it to break
     """
 
-    def __init__(
-        self,
-        world,
-        ego_vehicles,
-        config,
-        randomize=False,
-        debug_mode=False,
-        criteria_enable=True,
-        timeout=60,
-    ):
+    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True, timeout=60):
         """
         Setup all relevant parameters and create scenario
         """
@@ -104,7 +95,8 @@ class StaticCutIn(BasicScenario):
             # Move to the side
             side_wp = blocker_wp.get_left_lane() if self._direction == 'left' else blocker_wp.get_right_lane()
             if not side_wp:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't find a proper position for the cut in vehicle")
 
             if i == 1:
@@ -114,7 +106,8 @@ class StaticCutIn(BasicScenario):
             blocker_actor = CarlaDataProvider.request_new_actor(
                 'vehicle.*', side_wp.transform, 'scenario', attribute_filter=self._attributes)
             if not blocker_actor:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't spawn an actor")
             blocker_actor.apply_control(carla.VehicleControl(hand_brake=True))
 
@@ -126,7 +119,8 @@ class StaticCutIn(BasicScenario):
             # Move to the front
             next_wps = blocker_wp.next(self._vehicle_gap)
             if not next_wps:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't find a proper position for the cut in vehicle")
             blocker_wp = next_wps[0]
 
@@ -138,7 +132,8 @@ class StaticCutIn(BasicScenario):
         while dist < self._adversary_end_distance:
             next_wps = next_wp.next(step)
             if not next_wps:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't find a proper position for the cut in vehicle")
             next_wp = next_wps[0]
             self._plan.append([next_wp, RoadOption.STRAIGHT])
@@ -148,13 +143,15 @@ class StaticCutIn(BasicScenario):
         # Spawn the cut in vehicle
         side_wp = blocker_wp.get_left_lane() if self._direction == 'left' else blocker_wp.get_right_lane()
         if not side_wp:
-            self._destroy_other_actors()
+            for actor in self.other_actors:
+                actor.destroy()
             raise ValueError("Couldn't find a proper position for the cut in vehicle")
 
         self._adversary_actor = CarlaDataProvider.request_new_actor(
             'vehicle.*', side_wp.transform, 'scenario', attribute_filter=self._attributes)
         if not self._adversary_actor:
-            self._destroy_other_actors()
+            for actor in self.other_actors:
+                actor.destroy()
             raise ValueError("Couldn't spawn an actor")
 
         self._adversary_actor.set_simulate_physics(False)
@@ -162,29 +159,32 @@ class StaticCutIn(BasicScenario):
         self._side_transforms.append([self._adversary_actor, side_wp.transform])
         self.other_actors.append(self._adversary_actor)
 
-        # This starts the engine, to allow the adversary to instantly move
-        self._adversary_actor.apply_control(carla.VehicleControl(throttle=1.0, brake=1.0))
+        # This starts the engine, to allow the adversary to instantly move 
+        self._adversary_actor.apply_control(carla.VehicleControl(throttle=1.0, brake=1.0)) 
 
         # Move to the front
         next_wps = blocker_wp.next(self._vehicle_gap)
         if not next_wps:
-            self._destroy_other_actors()
+            for actor in self.other_actors:
+                actor.destroy()
             raise ValueError("Couldn't find a proper position for the cut in vehicle")
         blocker_wp = next_wps[0]
 
         # Spawn the vehicles in front of the cut in one
-        for _ in range(self._front_vehicles):
+        for i in range(self._front_vehicles):
             # Move to the side
             side_wp = blocker_wp.get_left_lane() if self._direction == 'left' else blocker_wp.get_right_lane()
             if not side_wp:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't find a proper position for the cut in vehicle")
 
             # Spawn the actor
             blocker_actor = CarlaDataProvider.request_new_actor(
                 'vehicle.*', side_wp.transform, 'scenario', attribute_filter=self._attributes)
             if not blocker_actor:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't spawn an actor")
             blocker_actor.apply_control(carla.VehicleControl(hand_brake=True))
 
@@ -196,7 +196,8 @@ class StaticCutIn(BasicScenario):
             # Move to the front
             next_wps = blocker_wp.next(self._vehicle_gap)
             if not next_wps:
-                self._destroy_other_actors()
+                for actor in self.other_actors:
+                    actor.destroy()
                 raise ValueError("Couldn't find a proper position for the cut in vehicle")
             blocker_wp = next_wps[0]
 

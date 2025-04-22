@@ -1,5 +1,5 @@
 <routes>
-   <route id="0" town="Town10HD_Opt">
+   <route id="0" town="Town10HD">
       <!-- <weathers>
          <weather route_percentage="0"
             cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
@@ -10,30 +10,54 @@
       </weathers> -->
       <waypoints>
          <position x="85.7" y="66.4" z="0.0"/>
+         <position x="70.7" y="66.4" z="0.0"/> 
          <position x="-2.8" y="66.2" z="0.0"/>
+         <position x="-20.8" y="66.2" z="0.0"/> 
          <position x="-41.7" y="47.7" z="0.0"/>
          <position x="-41.7" y="-32.0" z="0.0"/>
-         <position x="12.7" y="-57.4" z="0.0"/>
-         <position x="-0.8" y="13.2" z="0.0"/>
+         <!--<position x="12.7" y="-57.4" z="0.0"/>
+         <position x="-0.8" y="13.2" z="0.0"/> -->
       </waypoints>
       <scenarios>
-         <scenario name="ControlLoss_1" type="ControlLoss">
-            <trigger_point x="71.0" y="66.3" z="0.0" yaw="-179.9"/>
+         <scenario name="OppositeVehicleTakingPriority_1" type="OppositeVehicleTakingPriority">
+            <trigger_point x="70.0" y="66.4" z="0.0" yaw="179.9"/>
+            <trigger_distance value="21.0"/>
+            <adversary_speed value="20.0"/>
+            <direction value="right"/>         
          </scenario>
-         <scenario name="ControlLoss_2" type="ControlLoss">
-            <trigger_point x="19.4" y="66.3" z="0.0" yaw="-179.9"/>
-         </scenario>
-         <scenario name="DynamicObjectCrossing_1" type="DynamicObjectCrossing">
-            <trigger_point x="19.4" y="66.3" z="0.0" yaw="-179.9"/>
-            <distance value="35"/>
+         <!-- <scenario name="NoSignalJunctionCrossing_1" type="NoSignalJunctionCrossing">
+            <trigger_point x="70.0" y="66.4" z="0.0" yaw="179.9"/>
+         </scenario> -->
+
+         <!-- <scenario name="DynamicObjectCrossing_1" type="DynamicObjectCrossing">
+            <trigger_point x="30.0" y="66.4" z="0.0" yaw="-179.9"/>
+            <distance value="48"/>
             <direction value="right"/>
             <blocker_model value="static.prop.advertisement"/>
-            <crossing_angle value="7"/>
+            <crossing_angle value="0"/>
+         </scenario> -->
+         <scenario name="PedestrianCrossing_1" type="PedestrianCrossing">
+            <trigger_point x="-41.7" y="52.7" z="0.0" yaw="-90.2"/>
+            <distance value="10"/>
+            <direction value="True"/>
+         </scenario> 
+         <scenario name="OppositeVehicleRunningRedLight_1" type="OppositeVehicleRunningRedLight">
+            <trigger_point x="-41.7" y="37.5" z="0.0" yaw="-90.2"/>
+            <direction value="right"/> 
+            <trigger_distance value="20"/>
+            <adversary_speed value="20.0"/>
          </scenario>
-         <scenario name="ControlLoss_3" type="ControlLoss">
+         <scenario name="ParkedObstacle_1" type="ParkedObstacle">
+            <trigger_point x="-41.7" y="-9.0" z="0.0" yaw="-90.2"/>
+            <spawn_side_property value="False"/>
+            <!-- <obstacle_type value="vehicle.tesla.model3"/> -->
+            <distance value="5.0"/>
+            <direction value="right"/>
+         </scenario>
+         <!-- <scenario name="ControlLoss_3" type="ControlLoss">
             <trigger_point x="-41.7" y="49.4" z="0.0" yaw="-90.2"/>
-         </scenario>
-         <scenario name="DynamicObjectCrossing_2" type="DynamicObjectCrossing">
+         </scenario> -->
+         <!-- <scenario name="DynamicObjectCrossing_2" type="DynamicObjectCrossing">
             <trigger_point x="-41.8" y="-3.3" z="0.0" yaw="-90.2"/>
             <distance value="35"/>
             <direction value="right"/>
@@ -48,10 +72,10 @@
          </scenario>
          <scenario name="BlockedIntersection_1" type="BlockedIntersection">
             <trigger_point x="99.4" y="-15.6" z="0.0" yaw="89.8"/>
-         </scenario>
-         <scenario name="ControlLoss_4" type="ControlLoss">
+         </scenario> -->
+         <!-- <scenario name="ControlLoss_4" type="ControlLoss">
             <trigger_point x="15.2" y="13.2" z="0.0" yaw="180.2"/>
-         </scenario>
+         </scenario> -->
       </scenarios>
    </route>
 </routes>

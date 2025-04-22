@@ -1,0 +1,14 @@
+py-trees==0.8.3
+numpy==1.26.4; python_version >= '3.0'
+networkx==3.0
+Shapely==2.0.1
+psutil
+xmlschema==1.0.18
+ephem
+tabulate
+opencv-python==4.6.0.66
+matplotlib
+six
+simple-watchdog-timer
+antlr4-python3-runtime==4.9.3
+graphviz

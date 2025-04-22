@@ -20,10 +20,7 @@ import traceback
 import argparse
 from argparse import RawTextHelpFormatter
 from datetime import datetime
-try:
-    from packaging.version import Version
-except ImportError:
-    from distutils.version import LooseVersion as Version  # Python 2 fallback
+from distutils.version import LooseVersion
 import importlib
 import inspect
 import os
@@ -31,19 +28,7 @@ import signal
 import sys
 import time
 import json
-
-try:
-    # requires Python 3.8+
-    from importlib.metadata import metadata
-
-    def get_carla_version():
-        return Version(metadata("carla")["Version"])
-except ModuleNotFoundError:
-    # backport checking for older Python versions; module is deprecated
-    import pkg_resources
-
-    def get_carla_version():
-        return Version(pkg_resources.get_distribution("carla").version)
+import pkg_resources
 
 import carla
 
@@ -58,8 +43,8 @@ from srunner.tools.osc2_helper import OSC2Helper
 from srunner.scenarios.osc2_scenario import OSC2Scenario
 from srunner.scenarioconfigs.osc2_scenario_configuration import OSC2ScenarioConfiguration
 
-# Minimum version of CARLA that is required
-MIN_CARLA_VERSION = '0.9.14'
+# Version of scenario_runner
+VERSION = '0.9.13'
 
 
 class ScenarioRunner(object):
@@ -79,6 +64,7 @@ class ScenarioRunner(object):
     # Tunable parameters
     client_timeout = 10.0  # in seconds
     wait_for_world = 20.0  # in seconds
+    frame_rate = 20.0      # in Hz
 
     # CARLA world and scenario handlers
     world = None
@@ -106,13 +92,9 @@ class ScenarioRunner(object):
         # requests in the localhost at port 2000.
         self.client = carla.Client(args.host, int(args.port))
         self.client.set_timeout(self.client_timeout)
-        carla_version = get_carla_version()
-        if carla_version < Version(MIN_CARLA_VERSION):
-            raise ImportError(
-                "CARLA version {} or newer required. CARLA version found: {}".format(
-                    MIN_CARLA_VERSION, carla_version
-                )
-            )
+        dist = pkg_resources.get_distribution("carla")
+        if LooseVersion(dist.version) < LooseVersion('0.9.15'):
+            raise ImportError("CARLA version 0.9.15 or newer required. CARLA version found: {}".format(dist))
 
         # Load agent if requested via command line args
         # If something goes wrong an exception will be thrown by importlib (ok here)
@@ -206,9 +188,9 @@ class ScenarioRunner(object):
             except RuntimeError:
                 sys.exit(-1)
 
-        # self.manager.cleanup()
+        self.manager.cleanup()
 
-        # CarlaDataProvider.cleanup()
+        CarlaDataProvider.cleanup()
 
         for i, _ in enumerate(self.ego_vehicles):
             if self.ego_vehicles[i]:
@@ -330,31 +312,41 @@ class ScenarioRunner(object):
         Load a new CARLA world and provide data to CarlaDataProvider
         """
 
-        if self._args.reloadWorld:
-            self.world = self.client.load_world(town)
-        else:
-            # if the world should not be reloaded, wait at least until all ego vehicles are ready
-            ego_vehicle_found = False
-            if self._args.waitForEgo:
-                while not ego_vehicle_found and not self._shutdown_requested:
-                    vehicles = self.client.get_world().get_actors().filter('vehicle.*')
-                    for ego_vehicle in ego_vehicles:
-                        ego_vehicle_found = False
-                        for vehicle in vehicles:
-                            if vehicle.attributes['role_name'] == ego_vehicle.rolename:
-                                ego_vehicle_found = True
-                                break
-                        if not ego_vehicle_found:
-                            print("Not all ego vehicles ready. Waiting ... ")
-                            time.sleep(1)
+        print('Inside _load_and_wait_for_world')
+
+        # Print all actors in the CARLA world
+        # print("Listing all actors in the CARLA world:")
+        # all_actors = self.client.get_world().get_actors()
+        # for actor in all_actors:
+        #     print(f"Actor ID: {actor.id}, Type: {actor.type_id}, Role Name: {actor.attributes.get('role_name')}")
+
+        # input("Press Enter to continue...")
+
+        # if self._args.reloadWorld:
+        #     self.world = self.client.load_world(town)
+        # else:
+        # if the world should not be reloaded, wait at least until all ego vehicles are ready
+        ego_vehicle_found = False
+        if self._args.waitForEgo:
+            while not ego_vehicle_found and not self._shutdown_requested:
+                vehicles = self.client.get_world().get_actors().filter('vehicle.*')
+                for ego_vehicle in ego_vehicles:
+                    ego_vehicle_found = False
+                    for vehicle in vehicles:
+                        if vehicle.attributes['role_name'] == ego_vehicle.rolename:
+                            ego_vehicle_found = True
                             break
+                    if not ego_vehicle_found:
+                        print("Not all ego vehicles ready. Waiting ... ")
+                        time.sleep(1)
+                        break
 
         self.world = self.client.get_world()
 
         if self._args.sync:
             settings = self.world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = 1.0 / self._args.frameRate
+            settings.fixed_delta_seconds = 1.0 / self.frame_rate
             self.world.apply_settings(settings)
 
         CarlaDataProvider.set_client(self.client)
@@ -397,6 +389,7 @@ class ScenarioRunner(object):
         CarlaDataProvider.set_traffic_manager_port(int(self._args.trafficManagerPort))
         tm = self.client.get_trafficmanager(int(self._args.trafficManagerPort))
         tm.set_random_device_seed(int(self._args.trafficManagerSeed))
+        tm.set_respawn_dormant_vehicles(False)
         if self._args.sync:
             tm.set_synchronous_mode(True)
 
@@ -442,6 +435,19 @@ class ScenarioRunner(object):
 
             # Load scenario and run it
             self.manager.load_scenario(scenario, self.agent_instance)
+            
+            # # Now once the scenario starts running we 
+            # # 1st Set the initial position in Autoware
+            # # 2nd Then we set the target 
+            # # 3rd Then we engage
+            # print("Sending actual position, target, and engage mode to autoware...")
+            # import subprocess
+            # # Replace '/path/to/autoware_initializer.py' with the actual path
+            # # Build a relative path from the current file's directory to the autoware_initializer script.
+            # current_dir = os.path.dirname(os.path.abspath(__file__))
+            # script_path = os.path.join(current_dir, "srunner/utilities/autoware", "autoware_initializer.py")
+            # subprocess.run(["python3", script_path], check=True)
+
             self.manager.run_scenario()
 
             # Provide outputs if required
@@ -565,12 +571,12 @@ def main():
     main function
     """
     description = ("CARLA Scenario Runner: Setup, Run and Evaluate scenarios using CARLA\n"
-                   "Current version: " + MIN_CARLA_VERSION)
+                   "Current version: " + VERSION)
 
     # pylint: disable=line-too-long
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + MIN_CARLA_VERSION)
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
     parser.add_argument('--host', default='127.0.0.1',
                         help='IP of the host server (default: localhost)')
     parser.add_argument('--port', default='2000',
@@ -584,15 +590,10 @@ def main():
     parser.add_argument('--sync', action='store_true',
                         help='Forces the simulation to run synchronously')
     parser.add_argument('--list', action="store_true", help='List all supported scenarios and exit')
-    parser.add_argument('--frameRate', default='20', type=float,
-                        help='Frame rate (Hz) to use in \'sync\' mode (default: 20)')
 
     parser.add_argument(
-        "--scenario",
-        help="Name of the scenario to be executed. Use the preposition 'group:' to run all scenarios of one class"
-             " e.g. ControlLoss or FollowLeadingVehicle",
-    )
-    parser.add_argument("--openscenario", help="Provide an OpenSCENARIO definition")
+        '--scenario', help='Name of the scenario to be executed. Use the preposition \'group:\' to run all scenarios of one class, e.g. ControlLoss or FollowLeadingVehicle')
+    parser.add_argument('--openscenario', help='Provide an OpenSCENARIO definition')
     parser.add_argument('--openscenarioparams', help='Overwrited for OpenSCENARIO ParameterDeclaration')
     parser.add_argument('--openscenario2', help='Provide an openscenario2 definition')
     parser.add_argument('--route', help='Run a route as a scenario', type=str)
@@ -613,20 +614,11 @@ def main():
     parser.add_argument('--debug', action="store_true", help='Run with debug output')
     parser.add_argument('--reloadWorld', action="store_true",
                         help='Reload the CARLA world before starting a scenario (default=True)')
-    parser.add_argument(
-        "--record",
-        type=str,
-        default="",
-        help="Path were the files will be saved, relative to SCENARIO_RUNNER_ROOT."
-             "\nActivates the CARLA recording feature and saves to file all the criteria information.",
-    )
-    parser.add_argument("--randomize", action="store_true", help="Scenario parameters are randomized")
-    parser.add_argument("--repetitions", default=1, type=int, help="Number of scenario executions")
-    parser.add_argument(
-        "--waitForEgo",
-        action="store_true",
-        help="Connect the scenario to an existing ego vehicle",
-    )
+    parser.add_argument('--record', type=str, default='',
+                        help='Path were the files will be saved, relative to SCENARIO_RUNNER_ROOT.\nActivates the CARLA recording feature and saves to file all the criteria information.')
+    parser.add_argument('--randomize', action="store_true", help='Scenario parameters are randomized')
+    parser.add_argument('--repetitions', default=1, type=int, help='Number of scenario executions')
+    parser.add_argument('--waitForEgo', action="store_true", help='Connect the scenario to an existing ego vehicle')
 
     arguments = parser.parse_args()
     # pylint: enable=line-too-long

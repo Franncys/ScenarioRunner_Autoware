@@ -53,7 +53,7 @@ class BasicScenario(object):
 
         # If no timeout was provided, set it to 60 seconds
         if not hasattr(self, 'timeout'):
-            self.timeout = 60
+            self.timeout = 60 
         if debug_mode:
             py_trees.logging.level = py_trees.logging.Level.DEBUG
 
@@ -171,14 +171,6 @@ class BasicScenario(object):
 
             for new_actor in new_actors:
                 self.other_actors.append(new_actor)
-                
-    def _destroy_other_actors(self):
-        """
-        Remove all actors upon deletion
-        """
-        for actor in self.other_actors:
-            if CarlaDataProvider.remove_actor_by_id(actor.id) is None:
-                actor.destroy()
 
     def _setup_scenario_trigger(self, config):
         """
@@ -329,10 +321,20 @@ class BasicScenario(object):
         """
         Remove all actors
         """
+
+        # Get ego vehicle ID if it exists
+        ego_vehicle_id = None
+        if hasattr(self, 'ego_vehicle') and self.ego_vehicle is not None:
+            ego_vehicle_id = self.ego_vehicle.id
+            print('ego_vehicle ID = {0}', ego_vehicle_id)
+
         if not hasattr(self, 'other_actors'):
             return
         for i, _ in enumerate(self.other_actors):
             if self.other_actors[i] is not None:
+                if ego_vehicle_id is not None and self.other_actors[i].id == ego_vehicle_id:
+                    continue
+
                 if CarlaDataProvider.actor_id_exists(self.other_actors[i].id):
                     CarlaDataProvider.remove_actor_by_id(self.other_actors[i].id)
                 self.other_actors[i] = None

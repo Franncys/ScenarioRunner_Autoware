@@ -88,9 +88,9 @@ class ScenarioManager(object):
         if self.scenario is not None:
             self.scenario.terminate()
 
-        if self._agent is not None:
-            self._agent.cleanup()
-            self._agent = None
+        # if self._agent is not None:
+        #     self._agent.cleanup()
+        #     self._agent = None
 
         CarlaDataProvider.cleanup()
 
@@ -117,7 +117,9 @@ class ScenarioManager(object):
         """
         Trigger the start of the scenario and wait for it to finish/fail
         """
-        print("ScenarioManager: Running scenario {}".format(self.scenario_tree.name))
+        #print("ScenarioManager: Running scenario {}".format(self.scenario_tree.name))
+        #input("Press Enter to start the scenario...")
+        
         self.start_system_time = time.time()
         start_game_time = GameTime.get_time()
 

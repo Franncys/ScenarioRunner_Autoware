@@ -17,7 +17,9 @@ class ImportFile:
 
     # Verify that it is the same file by comparing whether the paths are the same
     def same_as(self, another_file):
-        return self.__base_path == another_file.get_path()
+        if self.__base_path == another_file.get_path():
+            return True
+        return False
 
     def get_true_path(self, import_file_path):
         """
@@ -86,9 +88,9 @@ class ImportFile:
                 "[Error] file '"
                 + self.get_path()
                 + "' line "
-                + str(lines)
+                + lines.__str__()
                 + ":"
-                + str(index)
+                + index.__str__()
                 + " mismatched input '<EOF>'"
             )
             return content, lines

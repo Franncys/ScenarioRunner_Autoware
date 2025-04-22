@@ -71,14 +71,7 @@ class RouteScenario(BasicScenario):
         self.timeout = self._estimate_route_timeout()
 
         if debug_mode:
-            self._draw_waypoints(
-                world,
-                self.route,
-                vertical_shift=0.1,
-                size=0.1,
-                persistency=self.timeout,
-                downsample=5,
-            )
+            self._draw_waypoints(world, self.route, vertical_shift=0.1, size=0.1, persistency=self.timeout, downsample=5)
 
         self._build_scenarios(
             world, ego_vehicle, sampled_scenario_definitions, timeout=self.timeout, debug=debug_mode > 0
@@ -129,9 +122,23 @@ class RouteScenario(BasicScenario):
         elevate_transform = self.route[0][0]
         elevate_transform.location.z += 0.5
 
-        ego_vehicle = CarlaDataProvider.request_new_actor('vehicle.lincoln.mkz_2017',
-                                                          elevate_transform,
-                                                          rolename='hero')
+        #List all vehicles in the CARLA world
+        print("Listing all vehicles in the CARLA world:")
+        all_actors = CarlaDataProvider.get_world().get_actors().filter('vehicle.*')
+        for actor in all_actors:
+            print(f"Vehicle ID: {actor.id}, Type: {actor.type_id}, Role Name: {actor.attributes.get('role_name')}")
+            ego_vehicle = actor
+        
+        #prompt the user to input enter
+        #input("Press Enter to spawn the ego vehicle...")
+        ego_vehicle = CarlaDataProvider.request_new_actor('vehicle.volkswagen.t2_2021',
+                                                        elevate_transform,
+                                                        rolename='ego_vehicle',
+                                                        already_spawned=True)
+        
+        #ego_vehicle = CarlaDataProvider.get_actor_by_name('ego_vehicle')
+        if ego_vehicle is None:
+            print("No ego vehicle found with role_name='ego_vehicle'")
 
         return ego_vehicle
 
@@ -212,22 +219,14 @@ class RouteScenario(BasicScenario):
 
         return all_scenario_classes
 
-    def _build_scenarios(
-        self,
-        world,
-        ego_vehicle,
-        scenario_definitions,
-        scenarios_per_tick=5,
-        timeout=300,
-        debug=False,
-    ):
+    def _build_scenarios(self, world, ego_vehicle, scenario_definitions, scenarios_per_tick=5, timeout=300, debug=False):
         """
         Initializes the class of all the scenarios that will be present in the route.
         If a class fails to be initialized, a warning is printed but the route execution isn't stopped
         """
         all_scenario_classes = self.get_all_scenario_classes()
         self.list_scenarios = []
-        ego_data = ActorConfigurationData(ego_vehicle.type_id, ego_vehicle.get_transform(), 'hero')
+        ego_data = ActorConfigurationData(ego_vehicle.type_id, ego_vehicle.get_transform(), 'ego_vehicle')
 
         if debug:
             tmap = CarlaDataProvider.get_map()
@@ -291,8 +290,7 @@ class RouteScenario(BasicScenario):
             if scenario.behavior_tree is not None:
                 scenario_behaviors.append(scenario.behavior_tree)
                 blackboard_list.append([scenario.config.route_var_name,
-                                        scenario.config.trigger_points[0].location,
-                                        scenario.name])
+                                        scenario.config.trigger_points[0].location])
 
         # Add the behavior that manages the scenario trigger conditions
         scenario_triggerer = ScenarioTriggerer(
@@ -300,7 +298,7 @@ class RouteScenario(BasicScenario):
         behavior.add_child(scenario_triggerer)  # Tick the ScenarioTriggerer before the scenarios
 
         # Add the Background Activity
-        behavior.add_child(BackgroundBehavior(self.ego_vehicles[0], self.route, name="BackgroundActivity"))
+        #behavior.add_child(BackgroundBehavior(self.ego_vehicles[0], self.route, name="BackgroundActivity"))
 
         behavior.add_children(scenario_behaviors)
         return behavior
@@ -321,14 +319,7 @@ class RouteScenario(BasicScenario):
         criteria.add_child(CollisionTest(self.ego_vehicles[0], name="CollisionTest"))
         criteria.add_child(RunningRedLightTest(self.ego_vehicles[0]))
         criteria.add_child(RunningStopTest(self.ego_vehicles[0]))
-        criteria.add_child(
-            MinimumSpeedRouteTest(
-                self.ego_vehicles[0],
-                route=self.route,
-                checkpoints=4,
-                name="MinSpeedTest",
-            )
-        )
+        criteria.add_child(MinimumSpeedRouteTest(self.ego_vehicles[0], route=self.route, checkpoints=4, name="MinSpeedTest"))
 
         # These stop the route early to save computational time
         criteria.add_child(InRouteTest(
@@ -353,7 +344,7 @@ class RouteScenario(BasicScenario):
         Create the weather behavior
         """
         if len(self.config.weather) == 1:
-            return  None# Just set the weather at the beginning and done
+            return  # Just set the weather at the beginning and done
         return RouteWeatherBehavior(self.ego_vehicles[0], self.route, self.config.weather)
 
     def _create_lights_behavior(self):

@@ -53,7 +53,7 @@ class AtomicCondition(py_trees.behaviour.Behaviour):
         """
         Default init. Has to be called via super from derived class
         """
-        super().__init__(name)
+        super(AtomicCondition, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self.name = name
 
@@ -80,10 +80,13 @@ class AtomicCondition(py_trees.behaviour.Behaviour):
 class IfTriggerer(AtomicCondition):
 
     def __init__(self, actor_ego, actor_npc, comparison_operator=operator.gt, name="IfTriggerer"):
-        super().__init__(name)
+        super(IfTriggerer, self).__init__(name)
         self.actor_ego = actor_ego
         self.actor_npc = actor_npc
         self._comparison_operator = comparison_operator
+
+    def initialise(self):
+        super(IfTriggerer, self).initialise()
 
     def update(self):
         ego_speed_now = CarlaDataProvider.get_velocity(self.actor_ego)
@@ -99,13 +102,13 @@ class IfTriggerer(AtomicCondition):
 
 class TimeOfWaitComparison(AtomicCondition):
     def __init__(self, duration_time, name="TimeOfWaitComparison"):
-        super().__init__(name)
+        super(TimeOfWaitComparison, self).__init__(name)
         self._duration_time = duration_time
         self._start_time = None
 
     def initialise(self):
         self._start_time = GameTime.get_time()
-        super().initialise()
+        super(TimeOfWaitComparison, self).initialise()
 
     def update(self):
         new_status = py_trees.common.Status.RUNNING
@@ -121,7 +124,7 @@ class InTriggerNearCollision(AtomicCondition):
         """
         Setup trigger distance
         """
-        super().__init__(name)
+        super(InTriggerNearCollision, self).__init__(name)
         self.logger.debug("%s.__init__()" % self.__class__.__name__)
         self._reference_actor = reference_actor
         self._actor = actor
@@ -173,7 +176,7 @@ class InTriggerDistanceToOSCPosition(AtomicCondition):
         """
         Setup parameters
         """
-        super().__init__(name)
+        super(InTriggerDistanceToOSCPosition, self).__init__(name)
         self._actor = actor
         self._osc_position = osc_position
         self._distance = distance
@@ -238,7 +241,7 @@ class InTimeToArrivalToOSCPosition(AtomicCondition):
         """
         Setup parameters
         """
-        super().__init__(name)
+        super(InTimeToArrivalToOSCPosition, self).__init__(name)
         self._map = CarlaDataProvider.get_map()
         self._actor = actor
         self._osc_position = osc_position
@@ -313,7 +316,7 @@ class StandStill(AtomicCondition):
         """
         Setup actor
         """
-        super().__init__(name)
+        super(StandStill, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
 
@@ -325,7 +328,7 @@ class StandStill(AtomicCondition):
         Initialize the start time of this condition
         """
         self._start_time = GameTime.get_time()
-        super().initialise()
+        super(StandStill, self).initialise()
 
     def update(self):
         """
@@ -335,7 +338,7 @@ class StandStill(AtomicCondition):
 
         velocity = CarlaDataProvider.get_velocity(self._actor)
 
-        if velocity > 0.1:
+        if velocity > EPSILON:
             self._start_time = GameTime.get_time()
 
         if GameTime.get_time() - self._start_time > self._duration:
@@ -366,7 +369,7 @@ class RelativeVelocityToOtherActor(AtomicCondition):
         """
         Setup the parameters
         """
-        super().__init__(name)
+        super(RelativeVelocityToOtherActor, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._other_actor = other_actor
@@ -414,7 +417,7 @@ class TriggerVelocity(AtomicCondition):
         """
         Setup the atomic parameters
         """
-        super().__init__(name)
+        super(TriggerVelocity, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._target_velocity = target_velocity
@@ -458,7 +461,7 @@ class TriggerAcceleration(AtomicCondition):
         """
         Setup trigger acceleration
         """
-        super().__init__(name)
+        super(TriggerAcceleration, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._target_acceleration = target_acceleration
@@ -504,7 +507,7 @@ class TimeOfDayComparison(AtomicCondition):
     def __init__(self, dattime, comparison_operator=operator.gt, name="TimeOfDayComparison"):
         """
         """
-        super().__init__(name)
+        super(TimeOfDayComparison, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._datetime = datetime.datetime.strptime(dattime, "%Y-%m-%dT%H:%M:%S")
         self._comparison_operator = comparison_operator
@@ -550,7 +553,7 @@ class OSCStartEndCondition(AtomicCondition):
         """
         Setup element details
         """
-        super().__init__(name)
+        super(OSCStartEndCondition, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._element_type = element_type.upper()
         self._element_name = element_name
@@ -563,7 +566,7 @@ class OSCStartEndCondition(AtomicCondition):
         Initialize the start time of this condition
         """
         self._start_time = GameTime.get_time()
-        super().initialise()
+        super(OSCStartEndCondition, self).initialise()
 
     def update(self):
         """
@@ -600,7 +603,7 @@ class InTriggerRegion(AtomicCondition):
         Setup trigger region (rectangle provided by
         [min_x,min_y] and [max_x,max_y]
         """
-        super().__init__(name)
+        super(InTriggerRegion, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._min_x = min_x
@@ -652,7 +655,7 @@ class InTriggerDistanceToVehicle(AtomicCondition):
         """
         Setup trigger distance
         """
-        super().__init__(name)
+        super(InTriggerDistanceToVehicle, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._reference_actor = reference_actor
         self._actor = actor
@@ -713,7 +716,7 @@ class InTriggerDistanceToLocation(AtomicCondition):
         """
         Setup trigger distance
         """
-        super().__init__(name)
+        super(InTriggerDistanceToLocation, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._target_location = target_location
         self._actor = actor
@@ -759,14 +762,14 @@ class InTriggerDistanceToNextIntersection(AtomicCondition):
         """
         Setup trigger distance
         """
-        super().__init__(name)
+        super(InTriggerDistanceToNextIntersection, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._distance = distance
         self._map = CarlaDataProvider.get_map()
 
         waypoint = self._map.get_waypoint(self._actor.get_location())
-        while waypoint and not waypoint.is_junction:
+        while waypoint and not waypoint.is_intersection:
             waypoint = waypoint.next(1)[-1]
 
         self._final_location = waypoint.transform.location
@@ -809,7 +812,7 @@ class InTriggerDistanceToLocationAlongRoute(AtomicCondition):
         """
         Setup class members
         """
-        super().__init__(name)
+        super(InTriggerDistanceToLocationAlongRoute, self).__init__(name)
         self._map = CarlaDataProvider.get_map()
         self._actor = actor
         self._location = location
@@ -860,7 +863,7 @@ class InTimeToArrivalToLocation(AtomicCondition):
         """
         Setup parameters
         """
-        super().__init__(name)
+        super(InTimeToArrivalToLocation, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._time = time
@@ -916,7 +919,7 @@ class InTimeToArrivalToVehicle(AtomicCondition):
         """
         Setup parameters
         """
-        super().__init__(name)
+        super(InTimeToArrivalToVehicle, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._map = CarlaDataProvider.get_map()
         self._actor = actor
@@ -1022,11 +1025,11 @@ class InTimeToArrivalToVehicleSideLane(InTimeToArrivalToLocation):
         elif self._side_lane == 'left':
             other_side_waypoint = other_waypoint.get_right_lane()
         else:
-            raise ValueError("cut_in_lane must be either 'left' or 'right'")
+            raise Exception("cut_in_lane must be either 'left' or 'right'")
 
         other_side_location = other_side_waypoint.transform.location
 
-        super().__init__(
+        super(InTimeToArrivalToVehicleSideLane, self).__init__(
             actor, time, other_side_location, comparison_operator, name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
 
@@ -1044,7 +1047,7 @@ class InTimeToArrivalToVehicleSideLane(InTimeToArrivalToLocation):
         elif self._side_lane == 'left':
             other_side_waypoint = other_waypoint.get_right_lane()
         else:
-            raise ValueError("cut_in_lane must be either 'left' or 'right'")
+            raise Exception("cut_in_lane must be either 'left' or 'right'")
         if other_side_waypoint is None:
             return new_status
 
@@ -1053,7 +1056,7 @@ class InTimeToArrivalToVehicleSideLane(InTimeToArrivalToLocation):
         if self._target_location is None:
             return new_status
 
-        new_status = super().update()
+        new_status = super(InTimeToArrivalToVehicleSideLane, self).update()
 
         return new_status
 
@@ -1075,7 +1078,7 @@ class WaitUntilInFront(AtomicCondition):
         """
         Init
         """
-        super().__init__(name)
+        super(WaitUntilInFront, self).__init__(name)
         self._actor = actor
         self._other_actor = other_actor
         self._distance = 10
@@ -1174,10 +1177,10 @@ class WaitUntilInFrontPosition(AtomicCondition):
         in_front = actor_dir.dot(self._ref_vector) > 0.0
 
         # Is the actor close-by?
-        close_by = (
-            not self._check_distance
-            or location.distance(self._ref_location) < self._distance
-        )
+        if not self._check_distance or location.distance(self._ref_location) < self._distance:
+            close_by = True
+        else:
+            close_by = False
 
         if in_front and close_by:
             new_status = py_trees.common.Status.SUCCESS
@@ -1201,7 +1204,7 @@ class DriveDistance(AtomicCondition):
         """
         Setup parameters
         """
-        super().__init__(name)
+        super(DriveDistance, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._target_distance = distance
         self._distance = 0
@@ -1210,7 +1213,7 @@ class DriveDistance(AtomicCondition):
 
     def initialise(self):
         self._location = CarlaDataProvider.get_location(self._actor)
-        super().initialise()
+        super(DriveDistance, self).initialise()
 
     def update(self):
         """
@@ -1247,7 +1250,7 @@ class AtRightmostLane(AtomicCondition):
         """
         Setup parameters
         """
-        super().__init__(name)
+        super(AtRightmostLane, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor
         self._map = CarlaDataProvider.get_map()
@@ -1291,7 +1294,7 @@ class WaitForTrafficLightState(AtomicCondition):
         """
         Setup traffic_light
         """
-        super().__init__(name)
+        super(WaitForTrafficLightState, self).__init__(name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
         self._actor = actor if "traffic_light" in actor.type_id else None
         self._state = state
@@ -1331,7 +1334,7 @@ class WaitForTrafficLightControllerState(AtomicCondition):
         """
         Init
         """
-        super().__init__(name)
+        super(WaitForTrafficLightControllerState, self).__init__(name)
         self.actor_id = traffic_signal_id
         self._actor = None
         self._start_time = None
@@ -1359,7 +1362,6 @@ class WaitForTrafficLightControllerState(AtomicCondition):
             self.duration_time = self.timeout
         else:
             return py_trees.common.Status.FAILURE
-        return None
 
     def update(self):
         """
@@ -1390,7 +1392,7 @@ class WaitEndIntersection(AtomicCondition):
     """
 
     def __init__(self, actor, junction_id=None, debug=False, name="WaitEndIntersection"):
-        super().__init__(name)
+        super(WaitEndIntersection, self).__init__(name)
         self.actor = actor
         self.debug = debug
         self._junction_id = junction_id
@@ -1432,7 +1434,7 @@ class WaitForBlackboardVariable(AtomicCondition):
 
     def __init__(self, variable_name, variable_value, var_init_value=None,
                  debug=False, name="WaitForBlackboardVariable"):
-        super().__init__(name)
+        super(WaitForBlackboardVariable, self).__init__(name)
         self._debug = debug
         self._variable_name = variable_name
         self._variable_value = variable_value
@@ -1463,7 +1465,7 @@ class CheckParameter(AtomicCondition):
     """
 
     def __init__(self, parameter_ref, value, comparison_operator, debug=False, name="CheckParameter"):
-        super().__init__(name)
+        super(CheckParameter, self).__init__(name)
         self._parameter_ref = parameter_ref
         self._value = value
         self._comparison_operator = comparison_operator

@@ -60,10 +60,10 @@ class PedestrianCrossing(BasicScenario):
         self._reference_waypoint = self._wmap.get_waypoint(self._trigger_location)
         self._rng = CarlaDataProvider.get_random_seed()
 
-        self._adversary_speed = 1.3  # Speed of the adversary [m/s]
+        self._adversary_speed = 2.2  # Speed of the adversary [m/s]
         self._reaction_time = 3.5  # Time the agent has to react to avoid the collision [s]
-        self._min_trigger_dist = 12.0  # Min distance to the collision location that triggers the adversary [m]
-        self._ego_end_distance = 40
+        self._min_trigger_dist = 33.0  # Min distance to the collision location that triggers the adversary [m]
+        self._ego_end_distance = 60
         self.timeout = timeout
 
         self._walker_data = [
@@ -84,8 +84,8 @@ class PedestrianCrossing(BasicScenario):
                           criteria_enable=criteria_enable)
 
     def _get_walker_transform(self, wp, displacement):
-        disp_x = displacement['x']
-        disp_y = displacement['y']
+        disp_x = displacement['x'] + 5
+        disp_y = displacement['y'] - 6
         disp_z = displacement['z']
         disp_yaw = displacement['yaw']
 
@@ -126,11 +126,12 @@ class PedestrianCrossing(BasicScenario):
             start_wp = wp
 
         # Spawn the walkers
-        for _, walker_data in enumerate(self._walker_data):
+        for i, walker_data in enumerate(self._walker_data):
             spawn_transform = self._get_walker_transform(start_wp, walker_data)
             walker = CarlaDataProvider.request_new_actor('walker.*', spawn_transform)
             if walker is None:
-                self._destroy_other_actors()
+                for walker in self.other_actors:
+                    walker.destroy()
                 raise ValueError("Failed to spawn an adversary")
 
             walker.set_location(spawn_transform.location + carla.Location(z=-200))
@@ -219,7 +220,7 @@ class PedestrianCrossing(BasicScenario):
     def _replace_walker(self, walker):
         """As the adversary is probably, replace it with another one"""
         type_id = walker.type_id
-        CarlaDataProvider.remove_actor_by_id(walker.id)
+        walker.destroy()
         spawn_transform = self.ego_vehicles[0].get_transform()
         spawn_transform.location.z -= 50
         walker = CarlaDataProvider.request_new_actor(type_id, spawn_transform)
@@ -239,7 +240,7 @@ class PedestrianCrossing(BasicScenario):
         parallel = py_trees.composites.Parallel(
             policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE, name="ScenarioTrigger")
 
-        for _, walker in enumerate(reversed(self.other_actors)):
+        for i, walker in enumerate(reversed(self.other_actors)):
             parallel.add_child(MovePedestrianWithEgo(self.ego_vehicles[0], walker, 100))
 
         parallel.add_child(trigger_tree)

@@ -23,14 +23,16 @@ class Preprocess:
 
     # Determine whether it is recorded
     def exit(self, current, note):
-        return any(current.same_as(member) for member in note)
+        for member in note:
+            if current.same_as(member):
+                return True
+        return False
 
     # Return import preprocessing results and import information
     def import_process(self):
-        with open(self.result, "w+", encoding="utf-8") as f:
-            self.file = f
-            current = ImportFile(self.current_path)
-            self.__import_process(current)
+        self.file = open(self.result, "w+", encoding="utf-8")
+        current = ImportFile(self.current_path)
+        self.__import_process(current)
         self.file.close()
         return self.result, self.import_msg
 

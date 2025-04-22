@@ -306,8 +306,3 @@ class Client:
                 reponse_list.append(Response(new_actor.id))
 
         return reponse_list
-
-class AttachmentType:
-    Rigid = 0
-    SpringArm = 1
-    SpringArmGhost = 2

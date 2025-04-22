@@ -407,7 +407,10 @@ class MetricsLog(object):  # pylint: disable=too-many-public-methods
         """
         lights = self.get_vehicle_lights(vehicle_id, frame)
 
-        return light in lights
+        if light in lights:
+            return True
+
+        return False
 
     # Scene lights
     def get_scene_light_state(self, light_id, frame):

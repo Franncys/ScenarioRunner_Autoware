@@ -30,12 +30,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (I
                                                                                WaitUntilInFrontPosition)
 from srunner.scenarios.basic_scenario import BasicScenario
 
-from srunner.tools.background_manager import (
-    LeaveSpaceInFront,
-    ChangeOppositeBehavior,
-    StopBackVehicles,
-    StartBackVehicles,
-)
+from srunner.tools.background_manager import LeaveSpaceInFront, ChangeOppositeBehavior, StopBackVehicles, StartBackVehicles
 
 
 def get_value_parameter(config, name, p_type, default):
@@ -86,14 +81,7 @@ class VehicleOpensDoorTwoWays(BasicScenario):
 
         self._opposite_interval = get_interval_parameter(config, 'frequency', float, [20, 100])
 
-        super().__init__(
-            "VehicleOpensDoorTwoWays",
-            ego_vehicles,
-            config,
-            world,
-            debug_mode,
-            criteria_enable=criteria_enable,
-        )
+        super().__init__("VehicleOpensDoorTwoWays", ego_vehicles, config, world, debug_mode, criteria_enable=criteria_enable)
 
     def _get_displaced_location(self, actor, wp):
         """
@@ -131,7 +119,7 @@ class VehicleOpensDoorTwoWays(BasicScenario):
         front_wps = starting_wp.next(self._parked_distance)
         if len(front_wps) == 0:
             raise ValueError("Couldn't find a spot to place the adversary vehicle")
-        if len(front_wps) > 1:
+        elif len(front_wps) > 1:
             print("WARNING: Found a diverging lane. Choosing one at random")
         self._front_wp = front_wps[0]
 
@@ -160,7 +148,7 @@ class VehicleOpensDoorTwoWays(BasicScenario):
 
     def _create_behavior(self):
         """
-        Leave space in front, as the TM doesn't detect open doors, and change the opposite frequency
+        Leave space in front, as the TM doesn't detect open doors, and change the opposite frequency 
         so that the ego can pass
         """
         reference_wp = self._parked_wp.get_left_lane()

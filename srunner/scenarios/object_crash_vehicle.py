@@ -84,7 +84,8 @@ class StationaryObjectCrossing(BasicScenario):
         orientation_yaw = waypoint.transform.rotation.yaw + offset['orientation']
         offset_location = carla.Location(
             offset['k'] * lane_width * math.cos(math.radians(position_yaw)),
-            offset['k'] * lane_width * math.sin(math.radians(position_yaw)))
+            offset['k'] * lane_width * math.sin(math.radians(position_yaw))
+        )
         location += offset_location
         location.z += offset['z']
         self.transform = carla.Transform(location, carla.Rotation(yaw=orientation_yaw))
@@ -139,7 +140,6 @@ class StationaryObjectCrossing(BasicScenario):
 
 
 class DynamicObjectCrossing(BasicScenario):
-
     """
     This class holds everything required for a simple object crash
     without prior vehicle action involving a vehicle and a cyclist/pedestrian,
@@ -149,16 +149,7 @@ class DynamicObjectCrossing(BasicScenario):
     This is a single ego vehicle scenario
     """
 
-    def __init__(
-        self,
-        world,
-        ego_vehicles,
-        config,
-        randomize=False,
-        debug_mode=False,
-        criteria_enable=True,
-        timeout=60,
-    ):
+    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True, timeout=60):
         """
         Setup all relevant parameters and create scenario
         """
@@ -174,12 +165,13 @@ class DynamicObjectCrossing(BasicScenario):
         self._blocker_transform = None
         self._collision_wp = None
 
-        self._adversary_speed = 2.0  # Speed of the adversary [m/s]
+        self._adversary_speed = 1.3  # Speed of the adversary [m/s]
         self._crossing_angle = get_value_parameter(config, 'crossing_angle', float, 0)
-        self._reaction_time = 2.1  # Time the agent has to react to avoid the collision [s]
+        self._reaction_time = 5.1  # Time the agent has to react to avoid the collision [s]
         self._reaction_time += 0.1 * floor(self._crossing_angle / 5)
-        self._min_trigger_dist = 6.0  # Min distance to the collision location that triggers the adversary [m]
-        self._ego_end_distance = 40
+        self._min_trigger_dist = 45.0  # Min distance to the collision location that triggers the adversary [m]
+        # TODO Make this a parameter
+        self._ego_end_distance = 30
         self.timeout = timeout
 
         self._number_of_attempts = 6
@@ -275,7 +267,7 @@ class DynamicObjectCrossing(BasicScenario):
             self._adversary_transform = self._get_sidewalk_transform(walker_wp, offset)
             adversary = CarlaDataProvider.request_new_actor('walker.*', self._adversary_transform)
             if adversary is None:
-                CarlaDataProvider.remove_actor_by_id(blocker.id)
+                blocker.destroy()
                 self._number_of_attempts -= 1
                 move_dist = self._retry_dist
                 print("Failed to spawn an adversary")
@@ -359,7 +351,7 @@ class DynamicObjectCrossing(BasicScenario):
     def _replace_walker(self, adversary):
         """As the adversary is probably, replace it with another one"""
         type_id = adversary.type_id
-        CarlaDataProvider.remove_actor_by_id(adversary.id)
+        adversary.destroy()
         spawn_transform = self.ego_vehicles[0].get_transform()
         spawn_transform.location.z -= 50
         adversary = CarlaDataProvider.request_new_actor(type_id, spawn_transform)
@@ -397,16 +389,7 @@ class ParkingCrossingPedestrian(BasicScenario):
     This is a single ego vehicle scenario
     """
 
-    def __init__(
-        self,
-        world,
-        ego_vehicles,
-        config,
-        randomize=False,
-        debug_mode=False,
-        criteria_enable=True,
-        timeout=60,
-    ):
+    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True, timeout=60):
         """
         Setup all relevant parameters and create scenario
         """
@@ -575,7 +558,7 @@ class ParkingCrossingPedestrian(BasicScenario):
     def _replace_walker(self, walker):
         """As the adversary is probably, replace it with another one"""
         type_id = walker.type_id
-        CarlaDataProvider.remove_actor_by_id(walker.id)
+        walker.destroy()
         spawn_transform = self.ego_vehicles[0].get_transform()
         spawn_transform.location.z -= 50
         walker = CarlaDataProvider.request_new_actor(type_id, spawn_transform)

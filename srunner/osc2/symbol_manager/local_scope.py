@@ -8,7 +8,10 @@ class LocalScope(BaseScope):
 
     # For local scopes, only internal naming conflicts are found
     def is_key_found(self, sym):
-        return bool(sym.name and sym.name in self.symbols)
+        if sym.name and sym.name in self.symbols:
+            return True
+        else:
+            return False
 
     def define(self, sym, ctx):
         if issubclass(type(sym), LocalScope):

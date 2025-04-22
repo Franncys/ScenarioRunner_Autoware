@@ -145,7 +145,7 @@ class Junction(object):
         self.exit_dict = OrderedDict()
         self.actor_dict = OrderedDict()
 
-        # Junction scenario variables
+        # Junction scenario variables 
         self.stop_non_route_entries = False
         self.clear_middle = False
         self.inactive_entry_keys = []
@@ -156,7 +156,11 @@ class Junction(object):
         if not wp.is_junction:
             return False
         other_id = wp.get_junction().id
-        return any(other_id == junction.id for junction in self.junctions)
+        for junction in self.junctions:
+            if other_id == junction.id:
+                return True
+        return False
+
 
 class BackgroundBehavior(AtomicBehavior):
     """
@@ -177,6 +181,12 @@ class BackgroundBehavior(AtomicBehavior):
         self._rng = CarlaDataProvider.get_random_seed()
 
         self._attribute_filter = {'base_type': 'car', 'special_type': '', 'has_lights': True, }
+
+        print("Listing all vehicles in the CARLA world:")
+        all_actors = CarlaDataProvider.get_world().get_actors().filter('vehicle.*')
+        for actor in all_actors:
+            print(f"Vehicle ID: {actor.id}, Type: {actor.type_id}, Role Name: {actor.attributes.get('role_name')}")
+            #ego_vehicle = actor
 
         # Global variables
         self._ego_actor = ego_actor
@@ -371,7 +381,7 @@ class BackgroundBehavior(AtomicBehavior):
         start_index = 0
 
         # Ignore the junction the ego spawns at
-        for i in range(self._route_length - 1):
+        for i in range(0, self._route_length - 1):
             if not self._is_junction(self._route[i]):
                 start_index = i
                 break
@@ -546,8 +556,8 @@ class BackgroundBehavior(AtomicBehavior):
 
             # Get the complex index
             current_index = -1
-            for i, complex_junction in enumerate(complex_junctions):
-                complex_ids = [j.id for j in complex_junction]
+            for i, complex_junctions in enumerate(complex_junctions):
+                complex_ids = [j.id for j in complex_junctions]
                 if junction.id in complex_ids:
                     current_index = i
                     break
@@ -1017,7 +1027,6 @@ class BackgroundBehavior(AtomicBehavior):
             self._add_actor_dict_element(junction.actor_dict, actor, at_oppo_entry_lane=at_oppo_entry_lane)
 
             return actor
-        return None
 
     def _move_road_sources(self, prev_ego_index):
         """
@@ -1028,7 +1037,7 @@ class BackgroundBehavior(AtomicBehavior):
             for lane_key in self._road_dict:
                 source = self._road_dict[lane_key]
 
-                # If no actors are found, let the last_location be ego's location
+                # If no actors are found, let the last_location be ego's location 
                 # to keep moving the source waypoint forward
                 if len(source.actors) == 0:
                     last_location = self._ego_wp.transform.location
@@ -1157,7 +1166,7 @@ class BackgroundBehavior(AtomicBehavior):
         All opposite lanes have actor sources that will continually create vehicles,
         creating the sensation of permanent traffic. The actor spawning will be done later on
         (_update_opposite_sources). These sources are at a (somewhat) fixed distance
-        from the ego, but they never entering junctions.
+        from the ego, but they never entering junctions. 
         """
         self._opposite_route_index = None
         if not self._junctions:
@@ -1298,20 +1307,8 @@ class BackgroundBehavior(AtomicBehavior):
             actor_dict = junction.actor_dict
             for source in junction.entry_sources:
                 if self.debug:
-                    draw_point(
-                        self._world,
-                        source.wp.transform.location,
-                        DEBUG_SMALL,
-                        DEBUG_JUNCTION,
-                        False,
-                    )
-                    draw_string(
-                        self._world,
-                        source.wp.transform.location,
-                        str(len(source.actors)),
-                        DEBUG_JUNCTION,
-                        False,
-                    )
+                    draw_point(self._world, source.wp.transform.location, DEBUG_SMALL, DEBUG_JUNCTION, False)
+                    draw_string(self._world, source.wp.transform.location, str(len(source.actors)), DEBUG_JUNCTION, False)
 
                 entry_lane_key = get_lane_key(source.entry_lane_wp)
                 at_oppo_entry_lane = entry_lane_key in junction.opposite_entry_keys
@@ -1340,11 +1337,7 @@ class BackgroundBehavior(AtomicBehavior):
                     actor = self._spawn_source_actor(source, self._junction_spawn_dist)
                     if not actor:
                         continue
-                    if (
-                        junction.stop_non_route_entries
-                        and get_lane_key(source.entry_lane_wp)
-                        not in junction.route_entry_keys
-                    ):
+                    if junction.stop_non_route_entries and get_lane_key(source.entry_lane_wp) not in junction.route_entry_keys:
                         self._actors_speed_perc[actor] = 0
                     self._add_actor_dict_element(actor_dict, actor, at_oppo_entry_lane=at_oppo_entry_lane)
                     source.actors.append(actor)
@@ -1444,18 +1437,14 @@ class BackgroundBehavior(AtomicBehavior):
 
                     if get_lane_key(source_wp) not in self._road_dict:
                         # Lanes created away from the center won't affect the ids of other lanes, so just add the new id
-                        self._road_dict[get_lane_key(source_wp)] = Source(
-                            source_wp, actors, active=self._active_road_sources
-                        )
+                        self._road_dict[get_lane_key(source_wp)] = Source(source_wp, actors, active=self._active_road_sources)
                     else:
                         # If the lane is inwards, all lanes have their id shifted by 1 outwards
                         # TODO: Doesn't work for more than one lane.
                         added_id = 1 if source_wp.lane_id > 0 else -1
                         new_lane_key = get_lane_key_from_ids(source_wp.road_id, source_wp.lane_id + added_id)
                         self._road_dict[new_lane_key] = self._road_dict[get_lane_key(source_wp)]
-                        self._road_dict[get_lane_key(source_wp)] = Source(
-                            source_wp, actors, active=self._active_road_sources
-                        )
+                        self._road_dict[get_lane_key(source_wp)] = Source(source_wp, actors, active=self._active_road_sources)
 
         elif len(new_wps) < len(old_wps):
             for old_wp in list(old_wps):
@@ -1846,7 +1835,8 @@ class BackgroundBehavior(AtomicBehavior):
 
             front_actors.append(actor)
             distance = location.distance(self._ego_wp.transform.location)
-            min_distance = min(distance, min_distance)
+            if distance < min_distance:
+                min_distance = distance
 
         step = space - min_distance
         if step > 0:  # Only move them if needed and only the minimum required distance
@@ -1903,7 +1893,7 @@ class BackgroundBehavior(AtomicBehavior):
             for _ in range(abs(lane_offset)):
                 side_wp = side_wp.get_right_lane() if lane_offset > 0 else side_wp.get_left_lane()
                 if not side_wp:
-                    print("WARNING: Couldn't find a lane with the desired offset")
+                    print(f"WARNING: Couldn't find a lane with the desired offset")
                     return
 
             add_lane_wp = side_wp
@@ -2203,8 +2193,9 @@ class BackgroundBehavior(AtomicBehavior):
         ego_transform = self._route[self._route_index].transform
         ego_heading = ego_transform.get_forward_vector()
         ego_actor_vec = location - ego_transform.location
-        return ego_heading.dot(ego_actor_vec) < - 0.17  # 100º
-
+        if ego_heading.dot(ego_actor_vec) < - 0.17:  # 100º
+            return True
+        return False
 
     def _update_road_actors(self):
         """
@@ -2321,7 +2312,10 @@ class BackgroundBehavior(AtomicBehavior):
             # Some roads have starting / ending lanes in the middle. Remap if that is detected
             prev_wps = get_same_dir_lanes(prev_wp)
             current_wps = get_same_dir_lanes(current_wp)
-            return len(prev_wps) != len(current_wps)
+            if len(prev_wps) != len(current_wps):
+                return True
+
+            return False
 
         def is_road_dict_unchanging(wp_pairs):
             """Sometimes 'monitor_topology_changes' has already done the necessary changes"""
@@ -2329,7 +2323,10 @@ class BackgroundBehavior(AtomicBehavior):
             if len(wp_pairs) != len(road_dict_keys):
                 return False
 
-            return all(get_lane_key(new_wp) in road_dict_keys for _, new_wp in wp_pairs)
+            for _, new_wp in wp_pairs:
+                if get_lane_key(new_wp) not in road_dict_keys:
+                    return False
+            return True
 
         if prev_route_index == self._route_index:
             return
@@ -2358,14 +2355,7 @@ class BackgroundBehavior(AtomicBehavior):
                 continue
 
             if self.debug:
-                draw_arrow(
-                    self._world,
-                    old_wp.transform.location,
-                    new_wp.transform.location,
-                    DEBUG_MEDIUM,
-                    DEBUG_ROAD,
-                    True,
-                )
+                draw_arrow(self._world, old_wp.transform.location, new_wp.transform.location, DEBUG_MEDIUM, DEBUG_ROAD, True)
 
             # Check that the lane is part of the road dictionary
             if old_key in list(self._road_dict):
@@ -2478,6 +2468,7 @@ class BackgroundBehavior(AtomicBehavior):
                 # Set them ready to move so that the ego can smoothly cross the junction
                 elif state == JUNCTION_EXIT_ROAD:
                     self._set_road_actor_speed(location, actor, multiplier=1.5)
+                    pass
 
                 # Wait
                 elif state == JUNCTION_EXIT_INACTIVE:
@@ -2564,7 +2555,7 @@ class BackgroundBehavior(AtomicBehavior):
         self._remove_actor_info(actor)
         try:
             actor.set_autopilot(False, self._tm_port)
-            CarlaDataProvider.remove_actor_by_id(actor.id)
+            actor.destroy()
         except RuntimeError:
             pass
 
