@@ -30,6 +30,9 @@ import time
 import json
 import pkg_resources
 
+import threading
+import subprocess
+
 import carla
 
 from srunner.scenarioconfigs.openscenario_configuration import OpenScenarioConfiguration
@@ -365,6 +368,24 @@ class ScenarioRunner(object):
             return False
 
         return True
+    
+    def run_AutowareInitializer(self):
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            script_path = os.path.join(current_dir, "srunner/utilities/autoware", "autoware_initializer.py")
+            subprocess.run(
+                ["python3", script_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                timeout=10,
+                text=True
+            )
+            print("Autoware initializer completed successfully.")
+        except subprocess.TimeoutExpired:
+            print("Autoware initializer timed out.")
+        except subprocess.CalledProcessError as e:
+            print(f"Autoware initializer failed: {e.stderr}")
 
     def _load_and_run_scenario(self, config):
         """
@@ -436,17 +457,44 @@ class ScenarioRunner(object):
             # Load scenario and run it
             self.manager.load_scenario(scenario, self.agent_instance)
             
-            # # Now once the scenario starts running we 
-            # # 1st Set the initial position in Autoware
-            # # 2nd Then we set the target 
-            # # 3rd Then we engage
-            # print("Sending actual position, target, and engage mode to autoware...")
-            # import subprocess
-            # # Replace '/path/to/autoware_initializer.py' with the actual path
-            # # Build a relative path from the current file's directory to the autoware_initializer script.
+            # Now once the scenario starts running we 
+            # 1st Set the initial position in Autoware
+            # 2nd Then we set the target 
+            # 3rd Then we engage
+            print("Sending actual position, target, and engage mode to autoware...")
+            
+            # Replace '/path/to/autoware_initializer.py' with the actual path
+            # Build a relative path from the current file's directory to the autoware_initializer script.
             # current_dir = os.path.dirname(os.path.abspath(__file__))
             # script_path = os.path.join(current_dir, "srunner/utilities/autoware", "autoware_initializer.py")
-            # subprocess.run(["python3", script_path], check=True)
+            #subprocess.run(["python3", script_path], check=True)
+            # subprocess.run(
+            #     ["python3", script_path],
+            #     stdout=subprocess.DEVNULL,
+            #     stderr=subprocess.DEVNULL,
+            #     check=True
+            # )
+
+            # try:
+            #     result = subprocess.run(
+            #         ["python3", script_path],
+            #         stdout=subprocess.PIPE,
+            #         stderr=subprocess.PIPE,
+            #         check=True,
+            #         timeout=10,  # Avoid hanging forever
+            #         text=True
+            #     )
+            #     print("Autoware initializer output:\n", result.stdout)
+            # except subprocess.TimeoutExpired:
+            #     print("Autoware initializer timed out.")
+            # except subprocess.CalledProcessError as e:
+            #     print("Autoware initializer failed:\n", e.stderr)
+            #threading.Thread(target=lambda: subprocess.run(["python3", script_path])).start()
+
+            # Run in thread and wait for it to finish
+            init_thread = threading.Thread(target=self.run_AutowareInitializer)
+            init_thread.start()
+            init_thread.join()  # THIS ensures the thread exits cleanly
 
             self.manager.run_scenario()
 
@@ -468,6 +516,7 @@ class ScenarioRunner(object):
 
         self._cleanup()
         return result
+    
 
     def _run_scenarios(self):
         """

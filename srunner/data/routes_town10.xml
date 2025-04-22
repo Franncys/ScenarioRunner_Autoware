@@ -47,13 +47,12 @@
             <trigger_distance value="20"/>
             <adversary_speed value="20.0"/>
          </scenario>
-         <scenario name="ParkedObstacle_1" type="ParkedObstacle">
+         <!-- <scenario name="ParkedObstacle_1" type="ParkedObstacle">
             <trigger_point x="-41.7" y="-9.0" z="0.0" yaw="-90.2"/>
             <spawn_side_property value="False"/>
-            <!-- <obstacle_type value="vehicle.tesla.model3"/> -->
             <distance value="5.0"/>
             <direction value="right"/>
-         </scenario>
+         </scenario> -->
          <!-- <scenario name="ControlLoss_3" type="ControlLoss">
             <trigger_point x="-41.7" y="49.4" z="0.0" yaw="-90.2"/>
          </scenario> -->
