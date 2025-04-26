@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from autoware_auto_vehicle_msgs.msg import Engage
+from std_msgs.msg import Bool
 
 class AutowareInitializer(Node):
     def __init__(self):
@@ -40,7 +41,7 @@ class AutowareInitializer(Node):
 
         # Publisher for sensor logging control
         self.sensor_logging_pub = self.create_publisher(
-            bool,
+            Bool,
             '/sensor_logging_control',
             10
         )
