@@ -57,7 +57,7 @@ class AutowareInitializer(Node):
             msg.header.stamp = self.get_clock().now().to_msg()
             self.initialpose_pub.publish(msg)
             self.get_logger().info("Published GNSS pose to /initialpose3d")
-            self._target_timer = self.create_timer(1.0, self.publish_target_goal)
+            self._target_timer = self.create_timer(0.5, self.publish_target_goal)
 
     def publish_target_goal(self):
         goal_msg = PoseStamped()
