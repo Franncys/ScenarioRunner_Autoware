@@ -87,7 +87,7 @@ class AutowareInitializer(Node):
         self.get_logger().info("Published engage command to /autoware/engage")
         
         # Publish the sensor logging control message
-        logging_msg = bool()
+        logging_msg = Bool()
         logging_msg.data = True
         self.sensor_logging_pub.publish(logging_msg)
         self.get_logger().info("Published sensor logging control message to /sensor_logging_control")
