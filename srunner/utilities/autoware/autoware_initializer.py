@@ -2,6 +2,7 @@ import sys
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
+from rclpy.executors import MultiThreadedExecutor
 from autoware_auto_vehicle_msgs.msg import Engage
 from std_msgs.msg import Bool
 
@@ -9,6 +10,7 @@ class AutowareInitializer(Node):
     def __init__(self):
         super().__init__('autoware_initializer')
         self.gnss_received = False
+        self.gnss_sent_count = 0
 
         # Subscriber for GNSS pose
         self.create_subscription(
@@ -39,12 +41,12 @@ class AutowareInitializer(Node):
             10
         )
 
-        # Publisher for sensor logging control
-        self.sensor_logging_pub = self.create_publisher(
-            Bool,
-            '/sensor_logging_control',
-            10
-        )
+        # # Publisher for sensor logging control
+        # self.sensor_logging_pub = self.create_publisher(
+        #     Bool,
+        #     '/sensor_logging_control',
+        #     10
+        # )
 
         # Timer handles
         self._target_timer = None
@@ -53,11 +55,16 @@ class AutowareInitializer(Node):
 
     def gnss_callback(self, msg: PoseWithCovarianceStamped):
         if not self.gnss_received:
-            self.gnss_received = True
+            #self.gnss_received = True
+            self.gnss_sent_count += 1
             msg.header.stamp = self.get_clock().now().to_msg()
             self.initialpose_pub.publish(msg)
             self.get_logger().info("Published GNSS pose to /initialpose3d")
-            self._target_timer = self.create_timer(0.5, self.publish_target_goal)
+            if self.gnss_sent_count >= 5:
+                self.gnss_received = True
+                self._target_timer = self.create_timer(0.5, self.publish_target_goal)
+            
+            #self._target_timer = self.create_timer(0.5, self.publish_target_goal)
 
     def publish_target_goal(self):
         goal_msg = PoseStamped()
@@ -79,7 +86,6 @@ class AutowareInitializer(Node):
 
         self._engage_timer = self.create_timer(1.0, self.publish_engage)
         
-
     def publish_engage(self):
         engage_msg = Engage()
         engage_msg.engage = True
@@ -87,10 +93,10 @@ class AutowareInitializer(Node):
         self.get_logger().info("Published engage command to /autoware/engage")
         
         # Publish the sensor logging control message
-        logging_msg = Bool()
-        logging_msg.data = True
-        self.sensor_logging_pub.publish(logging_msg)
-        self.get_logger().info("Published sensor logging control message to /sensor_logging_control")
+        # logging_msg = Bool()
+        # logging_msg.data = True
+        # self.sensor_logging_pub.publish(logging_msg)
+        # self.get_logger().info("Published sensor logging control message to /sensor_logging_control")
         
         if self._engage_timer is not None:
             self._engage_timer.cancel()
@@ -109,6 +115,8 @@ class AutowareInitializer(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = AutowareInitializer()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

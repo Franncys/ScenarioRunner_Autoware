@@ -461,7 +461,7 @@ class ScenarioRunner(object):
             # 1st Set the initial position in Autoware
             # 2nd Then we set the target 
             # 3rd Then we engage
-            print("Sending actual position, target, and engage mode to autoware...")
+            
             
             # Replace '/path/to/autoware_initializer.py' with the actual path
             # Build a relative path from the current file's directory to the autoware_initializer script.
@@ -492,7 +492,9 @@ class ScenarioRunner(object):
             #threading.Thread(target=lambda: subprocess.run(["python3", script_path])).start()
 
             # Run in thread and wait for it to finish
+            print("Sending actual position, target, and engage mode to autoware...")
             init_thread = threading.Thread(target=self.run_AutowareInitializer)
+
             init_thread.start()
             init_thread.join()  # THIS ensures the thread exits cleanly
 
