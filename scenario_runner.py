@@ -373,8 +373,12 @@ class ScenarioRunner(object):
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             script_path = os.path.join(current_dir, "srunner/utilities/autoware", "autoware_initializer.py")
+            
+            # Pass the faultInjector argument as an environment variable or command-line argument
+            fault_injector_name = self._args.faultInjector
+            
             subprocess.run(
-                ["python3", script_path],
+                ["python3", script_path, "--faultInjector", fault_injector_name],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True,
@@ -670,6 +674,7 @@ def main():
     parser.add_argument('--randomize', action="store_true", help='Scenario parameters are randomized')
     parser.add_argument('--repetitions', default=1, type=int, help='Number of scenario executions')
     parser.add_argument('--waitForEgo', action="store_true", help='Connect the scenario to an existing ego vehicle')
+    parser.add_argument('--faultInjector', default='', help='Name of the fault injector to be used')
 
     arguments = parser.parse_args()
     # pylint: enable=line-too-long

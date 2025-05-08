@@ -1,16 +1,19 @@
+import argparse
+import os
 import sys
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from rclpy.executors import MultiThreadedExecutor
 from autoware_auto_vehicle_msgs.msg import Engage
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 
 class AutowareInitializer(Node):
-    def __init__(self):
+    def __init__(self, fault_injector_name=None):
         super().__init__('autoware_initializer')
         self.gnss_received = False
         self.gnss_sent_count = 0
+        self.fault_injector_name = fault_injector_name
 
         # Subscriber for GNSS pose
         self.create_subscription(
@@ -48,14 +51,31 @@ class AutowareInitializer(Node):
         #     10
         # )
 
+        # Publisher for fault injector
+        self.fault_injector_pub = self.create_publisher(
+            String,
+            '/fault_injection_file',
+            10
+        )
+
         # Timer handles
         self._target_timer = None
         self._engage_timer = None
         self._shutdown_timer = None
 
+        # Publish fault injector name if defined
+        self.publish_fault_injector()
+
+    def publish_fault_injector(self):
+        if self.fault_injector_name:
+            fault_injector_msg = String()
+            fault_injector_msg.data = self.fault_injector_name
+            self.fault_injector_pub.publish(fault_injector_msg)
+            self.get_logger().info(f"Published fault injector name: {self.fault_injector_name}")
+
+
     def gnss_callback(self, msg: PoseWithCovarianceStamped):
         if not self.gnss_received:
-            #self.gnss_received = True
             self.gnss_sent_count += 1
             msg.header.stamp = self.get_clock().now().to_msg()
             self.initialpose_pub.publish(msg)
@@ -63,8 +83,6 @@ class AutowareInitializer(Node):
             if self.gnss_sent_count >= 5:
                 self.gnss_received = True
                 self._target_timer = self.create_timer(0.5, self.publish_target_goal)
-            
-            #self._target_timer = self.create_timer(0.5, self.publish_target_goal)
 
     def publish_target_goal(self):
         goal_msg = PoseStamped()
@@ -114,7 +132,17 @@ class AutowareInitializer(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = AutowareInitializer()
+
+    # Parse the faultInjector argument
+    parser = argparse.ArgumentParser(description="Autoware Initializer")
+    parser.add_argument('--faultInjector', default='', help='Name of the fault injector to be used')
+    parsed_args = parser.parse_args(args)
+
+    print(f"Fault Injector Name: {parsed_args.faultInjector}")
+
+    # Pass the faultInjector name to the AutowareInitializer
+    node = AutowareInitializer(fault_injector_name=parsed_args.faultInjector)
+
     executor = MultiThreadedExecutor()
     executor.add_node(node)
     rclpy.spin(node)
